@@ -1,0 +1,61 @@
+name: move issue to sprint board
+description: moves an issue to a sprintboard
+
+inputs:
+  PROJECT_NUMBER:
+    description: 'Project Number'
+  OWNER:
+    description: the owner of the project
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const triggerNumber = context.eventName === 'issues' ? context.payload.issue.number : context.payload.pull_request.number
+
+          const { organization }  = await github.graphql(
+            `query($owner: String!, $projectNumber: Int!) {
+              organization(login: $owner) {
+                projectV2(number: $projectNumber) {
+                  id
+                }
+              }
+            }`, {
+            owner: '${{inputs.OWNER}}',
+            projectNumber: parseInt('${{inputs.PROJECT_NUMBER}}')
+          })
+
+          const { repository } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on Issue { id }
+                  ... on PullRequest { id }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            })
+
+
+          const boardId = organization.projectV2.id
+          const ticketId = repository.issueOrPullRequest.id
+
+          const assignmentMutation = `mutation($projectId: ID!, $contentId: ID!) {
+            addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+              clientMutationId
+            }
+          }`
+
+          await github.graphql(assignmentMutation,{
+            projectId: boardId,
+            contentId: ticketId,
+          })
