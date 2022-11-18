@@ -2,7 +2,7 @@ name: move issue to sprint board
 description: moves an issue to a sprintboard
 
 inputs:
-  REVIEWERS_NAMES:
+  REVIEWER_NAMES:
     description: 'the username of the reviewers separated by a comma'
   GITHUB_TOKEN:
     description: the github token with the approriate access
@@ -40,7 +40,7 @@ runs:
               number: parseInt(${{inputs.NUMBER}})
             }
           )
-          const reviewersInput = '${{inputs.NUMBER}}'
+          const reviewersInput = '${{inputs.REVIEWER_NAMES}}'
           const reviewers = reviewersInput.split(',')
 
           const matchingNodes = membersWithRole.nodes.filter(node => reviewers.includes(node.login))
