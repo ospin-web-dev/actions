@@ -1,0 +1,74 @@
+name: move issue to sprint board
+description: moves an issue to a sprintboard
+
+inputs:
+  LABEL:
+    description: the label to be applied
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+runs:
+
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { issueOrPullRequest : { id, resourcePath, labels: issueLabels }, labels: repoLabels } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                  labels(first: 20) {
+                    nodes {
+                      id
+                    }
+                  }
+                issueOrPullRequest(number: $number) {
+                  ... on Issue { id, ressourcePath }
+                  ... on PullRequest { id, ressourcePath }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            }
+          )
+
+          const labelId = repoLabels.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
+
+          if(!labelId) {
+            core.setWarning('Could not find label ${{inputs.LABEL}} in the target repo')
+          }
+
+          const existingLabelIds = issueLabels.nodes.map(({id}) => id)
+
+          if(existingLabelIds.includes(labelId)) {
+            core.setInfo('Label already applied')
+            return
+          }
+
+          const ressourceType = resourcePath.split('/')[3]
+
+
+          switch (ressourceType) {
+            case 'issues':
+              await github.graphql(`mutation($labelIds: [ID!] = "", $id: ID = "") {
+                updateIssue(input: {id: $id, labelIds: $labelIds}) {
+                    clientMutationId
+                }
+              }`, { id, labelIds: [...existingLabelIds, labelId] } )
+
+            break;
+
+            case 'pull':
+              await github.graphql(`mutation($labelIds: [ID!] = "", $id: ID = "") {
+                updatePullRequest(input: {pullRequestId: $id, labelIds: $labelIds}) {
+                    clientMutationId
+                }
+              }`, { pullRequestId: id, labelIds: [...existingLabelIds, labelId] } )
+            break;
+          }
+
+
