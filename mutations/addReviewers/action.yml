@@ -46,7 +46,7 @@ runs:
           const matchingNodes = membersWithRole.nodes.filter(node => reviewers.includes(node.login))
           const reviewerIds = matchingNodes.map(({id}) => id)
 
-          await github.graphql(`mutation($assigneeIds: [ID!] = "", $pullRequestId: ID = "") {
+          await github.graphql(`mutation($userIds: [ID!] = "", $pullRequestId: ID = "") {
             requestReviews(input: {pullRequestId: $pullRequestId, userIds: $userIds}) {
               clientMutationId
             }
