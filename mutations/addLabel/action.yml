@@ -64,7 +64,7 @@ runs:
 
             case 'pull':
               await github.graphql(`mutation($labelIds: [ID!] = "", $pullRequestId: ID = "") {
-                updatePullRequest(input: {pullRequestId: $id, labelIds: $labelIds}) {
+                updatePullRequest(input: {pullRequestId: $pullRequestId, labelIds: $labelIds}) {
                     clientMutationId
                 }
               }`, { pullRequestId: id, labelIds: [...existingLabelIds, labelId] } )

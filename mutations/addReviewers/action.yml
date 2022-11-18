@@ -47,7 +47,7 @@ runs:
           const reviewerIds = matchingNodes.map(({id}) => id)
 
           await github.graphql(`mutation($assigneeIds: [ID!] = "", $pullRequestId: ID = "") {
-            requestReviews(input: {pullRequestId: $id, userIds: $userIds}) {
+            requestReviews(input: {pullRequestId: $pullRequestId, userIds: $userIds}) {
               clientMutationId
             }
           }`, { pullRequestId: id, userIds: reviewerIds } )
