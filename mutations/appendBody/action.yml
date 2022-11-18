@@ -48,7 +48,7 @@ runs:
             break;
 
             case 'pull':
-              await github.graphql(`mutation($body:  String!, $id: ID = "") {
+              await github.graphql(`mutation($body:  String!, $pullRequestId: ID = "") {
                 updatePullRequest(input: {pullRequestId: $id, body: $body}) {
                     clientMutationId
                 }

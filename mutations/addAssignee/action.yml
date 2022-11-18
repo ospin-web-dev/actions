@@ -54,7 +54,7 @@ runs:
             break;
 
             case 'pull':
-              await github.graphql(`mutation($assigneeIds: [ID!] = "", $id: ID = "") {
+              await github.graphql(`mutation($assigneeIds: [ID!] = "", $pullRequestId: ID = "") {
                 updatePullRequest(input: {pullRequestId: $id, assigneeIds: $assigneeIds}) {
                     clientMutationId
                 }
