@@ -16,7 +16,7 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { organization: { membersWithRole } } = await github.graphql(`query($user: String!) {
+          const { organization: { membersWithRole } } = await github.graphql(`query($login: String!) {
             organization(login: $login) {
               membersWithRole(first: 30) {
                 nodes {
