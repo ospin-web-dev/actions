@@ -30,8 +30,8 @@ runs:
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 issueOrPullRequest(number: $number) {
-                  ... on Issue { id, ressourcePath }
-                  ... on PullRequest { id, ressourcePath }
+                  ... on Issue { id, resourcePath }
+                  ... on PullRequest { id, resourcePath }
                 }
               }
             }`, {
@@ -41,9 +41,9 @@ runs:
             }
           )
 
-          const ressourceType = resourcePath.split('/')[3]
+          const resourceType = resourcePath.split('/')[3]
 
-          switch (ressourceType) {
+          switch (resourceType) {
             case 'issues':
               await github.graphql(`mutation($assigneeIds: [ID!] = "", $id: ID = "") {
                 updateIssue(input: {id: $id, assigneeIds: $assigneeIds}) {

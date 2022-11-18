@@ -31,7 +31,7 @@ runs:
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 issueOrPullRequest(number: $number) {
-                  ... on PullRequest { id, ressourcePath }
+                  ... on PullRequest { id, resourcePath }
                 }
               }
             }`, {

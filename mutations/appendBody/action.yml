@@ -31,13 +31,13 @@ runs:
             })
 
 
-          const ressourceType = resourcePath.split('/')[3]
+          const resourceType = resourcePath.split('/')[3]
 
           const newContent = body.concat(`
           ${{inputs.TEXT}}`)
 
 
-          switch (ressourceType) {
+          switch (resourceType) {
             case 'issues':
               await github.graphql(`mutation($body: String!, $id: ID = "") {
                 updateIssue(input: {id: $id, body: $body}) {
