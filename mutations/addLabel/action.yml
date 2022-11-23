@@ -20,8 +20,11 @@ runs:
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                   labels(first: 20) {
-                    nodes {
-                      id
+                    edges {
+                      node {
+                        id
+                        name
+                      }
                     }
                   }
                 issueOrPullRequest(number: $number) {
@@ -36,7 +39,7 @@ runs:
             }
           )
 
-          const labelId = repoLabels.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
+          const labelId = repoLabels.edges.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
 
           if(!labelId) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
