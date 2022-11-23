@@ -22,9 +22,8 @@ runs:
                   ... on PullRequest {
                     id
                     reviews(first: 10) {
-                        nodes {
-                          state
-                        }
+                      nodes {
+                        state
                       }
                     }
                   }
@@ -34,7 +33,6 @@ runs:
               repo: context.repo.repo,
               owner: context.repo.owner,
               number: parseInt(${{ inputs.NUMBER }})
-
             }
           )
 

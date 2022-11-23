@@ -22,9 +22,8 @@ runs:
                   ... on PullRequest {
                     id
                     reviews(first: 10) {
-                        nodes {
-                          state
-                        }
+                      nodes {
+                        state
                       }
                     }
                   }
