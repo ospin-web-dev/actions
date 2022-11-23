@@ -39,7 +39,7 @@ runs:
             }
           )
 
-          const labelId = repoLabels.edges.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
+          const labelId = repoLabels.edges.find((({ node }) => node.name === '${{inputs.LABEL}}' )
 
           if(!labelId) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
