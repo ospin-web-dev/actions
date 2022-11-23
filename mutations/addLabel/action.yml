@@ -26,8 +26,26 @@ runs:
                   }
                 }
                 issueOrPullRequest(number: $number) {
-                  ... on Issue { id, resourcePath }
-                  ... on PullRequest { id, resourcePath }
+                  ... on Issue {
+                    id,
+                    resourcePath,
+                    labels(first: 20) {
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                  ... on PullRequest {
+                    id,
+                    resourcePath,
+                    labels(first: 20) {
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
                 }
               }
             }`, {
