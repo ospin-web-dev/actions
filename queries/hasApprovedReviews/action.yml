@@ -36,8 +36,8 @@ runs:
           }
 
           const isApproved = issueOrPullRequest.reviews.nodes.some(node => node.state === 'APPROVED')
-
-          core.exportVariable('APPROVED', isApproved)
+          if(!isApproved) { return }
+          core.exportVariable('APPROVED', true)
 
 
 

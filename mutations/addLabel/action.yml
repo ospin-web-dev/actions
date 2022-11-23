@@ -16,7 +16,7 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } = await github.graphql(
+          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } } = await github.graphql(
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 labels(first: 30) {
@@ -37,7 +37,7 @@ runs:
             }
           )
 
-          const node = labels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
+          const node = repoLabels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
 
           if(!node) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
