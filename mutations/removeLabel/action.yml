@@ -16,17 +16,36 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { repository: { issueOrPullRequest : { id, resourcePath, labels: issueLabels }, labels: repoLabels } } = await github.graphql(
+          const { repository: { issueOrPullRequest : { id, resourcePath, labels: ticketLabels }, labels: repoLabels } } = await github.graphql(
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
-                  labels(first: 20) {
-                    nodes {
-                      id
+                labels(first: 30) {
+                  nodes {
+                    id
+                    name
+                  }
+                }
+                issueOrPullRequest(number: $number) {
+                  ... on Issue {
+                    id,
+                    resourcePath,
+                    labels(first: 30) {
+                      nodes {
+                        id
+                        name
+                      }
                     }
                   }
-                issueOrPullRequest(number: $number) {
-                  ... on Issue { id, resourcePath }
-                  ... on PullRequest { id, resourcePath }
+                  ... on PullRequest {
+                    id,
+                    resourcePath,
+                    labels(first: 30) {
+                      nodes {
+                        id
+                        name
+                      }
+                    }
+                  }
                 }
               }
             }`, {
@@ -42,7 +61,7 @@ runs:
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
           }
 
-          const existingLabelIds = issueLabels.nodes.map(({id}) => id)
+          const existingLabelIds = ticketLabels.nodes.map(({id}) => id)
 
           if(!existingLabelIds.includes(labelId)) {
             core.setInfo('Label not assigned to ticket')
