@@ -16,7 +16,7 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { repository: { issueOrPullRequest : { id, resourcePath, labels: ticketLabels }, labels: repoLabels } } = await github.graphql(
+          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } } = await github.graphql(
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 labels(first: 30) {
@@ -29,7 +29,7 @@ runs:
                   ... on Issue {
                     id,
                     resourcePath,
-                    labels(first: 30) {
+                    labels(first: 20) {
                       nodes {
                         id
                         name
@@ -39,7 +39,7 @@ runs:
                   ... on PullRequest {
                     id,
                     resourcePath,
-                    labels(first: 30) {
+                    labels(first: 20) {
                       nodes {
                         id
                         name
@@ -54,17 +54,19 @@ runs:
               number: parseInt(${{inputs.NUMBER}})
             }
           )
+          const node = repoLabels.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
 
-          const labelId = repoLabels.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
-
-          if(!labelId) {
+          if(!node) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
           }
+
+          const {id: labelId } = node
+
 
           const existingLabelIds = ticketLabels.nodes.map(({id}) => id)
 
           if(!existingLabelIds.includes(labelId)) {
-            core.setInfo('Label not assigned to ticket')
+            core.info('Label not assigned to ticket')
             return
           }
 
