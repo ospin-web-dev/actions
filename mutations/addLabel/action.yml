@@ -16,17 +16,17 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { repository: { issueOrPullRequest : { id, resourcePath, labels: issueLabels }, labels: repoLabels } } = await github.graphql(
+          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } = await github.graphql(
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
-                  labels(first: 20) {
-                    edges {
-                      node {
-                        id
-                        name
-                      }
+                labels(first: 30) {
+                  edges {
+                    node {
+                      id
+                      name
                     }
                   }
+                }
                 issueOrPullRequest(number: $number) {
                   ... on Issue { id, resourcePath }
                   ... on PullRequest { id, resourcePath }
@@ -39,12 +39,14 @@ runs:
             }
           )
 
-          const labelId = repoLabels.edges.find((({ node }) => node.name === '${{inputs.LABEL}}' )
+          const edge = repoLabels.edges.find(({ node }) => node.name === '${{inputs.LABEL}}' )
 
-          if(!labelId) {
+          if(!Object.keys(edge).length) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
             return
           }
+
+          const {node :{ id: labelId} } = edge
 
           const existingLabelIds = issueLabels.nodes.map(({id}) => id)
 
