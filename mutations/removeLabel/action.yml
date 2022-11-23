@@ -16,7 +16,7 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } } = await github.graphql(
+          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: ticketLabels } } } = await github.graphql(
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 labels(first: 30) {
