@@ -30,7 +30,7 @@ runs:
                     id,
                     resourcePath,
                     labels(first: 20) {
-                      node {
+                      nodes {
                         id
                         name
                       }
@@ -40,7 +40,7 @@ runs:
                     id,
                     resourcePath,
                     labels(first: 20) {
-                      node {
+                      nodes {
                         id
                         name
                       }
