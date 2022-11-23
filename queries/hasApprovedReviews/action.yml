@@ -19,7 +19,15 @@ runs:
             `query($repo: String!,$owner: String!, $number: Int!) {
               repository(name: $repo, owner: $owner) {
                 issueOrPullRequest(number: $number) {
-                  ... on PullRequest { reviews, id }
+                  ... on PullRequest {
+                    id
+                    reviews(first: 10) {
+                        nodes {
+                          state
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }`, {
