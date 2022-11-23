@@ -39,7 +39,7 @@ runs:
           const labelId = repoLabels.nodes.find(({name}) => name === '${{inputs.LABEL}}' )
 
           if(!labelId) {
-            core.setWarning('Could not find label ${{inputs.LABEL}} in the target repo')
+            core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
           }
 
           const existingLabelIds = issueLabels.nodes.map(({id}) => id)

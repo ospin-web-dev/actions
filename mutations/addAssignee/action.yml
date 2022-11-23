@@ -23,7 +23,8 @@ runs:
           }`, { user: '${{inputs.ASSIGNEE_NAME}}' } )
 
           if (!user) {
-            core.setFailed('Could not find user')
+            core.error('Could not find user')
+            return
           }
 
           const { repository: { issueOrPullRequest : { id, resourcePath } } } = await github.graphql(

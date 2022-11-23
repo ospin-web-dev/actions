@@ -69,7 +69,7 @@ runs:
           const singleSelectOption = selectField.options.find(option => option.name === '${{inputs.FIELD_VALUE}}')
 
           if(!singleSelectOption) {
-            core.setFailed('${{inputs.FIELD_VALUE}} is not a valid selection')
+            core.error('${{inputs.FIELD_VALUE}} is not a valid selection')
           }
 
           const projectId = organization.projectV2.id

@@ -1,5 +1,5 @@
 name: Check for Aprroved Reviews
-description: checks the associated PR for any blocking reviews, will set APPROVED output to true, will return false if none is found
+description: checks the associated PR for any approved reviews, will set APPROVED output to true, will return false if none is found
 
 inputs:
   GITHUB_TOKEN:
@@ -31,7 +31,7 @@ runs:
           )
 
           if(!issueOrPullRequest.id){
-            core.setWarning('No PR Found')
+            core.warning('No PR Found')
             return
           }
 

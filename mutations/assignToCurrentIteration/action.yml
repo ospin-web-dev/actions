@@ -67,7 +67,7 @@ runs:
           const boardItem = organization.projectV2.items.nodes.find(node => node.content.number === parseInt(${{inputs.NUMBER}}))
 
           if(iterationFieldNode.configuration.iterations.length === 0) {
-            core.setFailed('No current Iteration')
+            core.error('No current Iteration')
           }
 
 
