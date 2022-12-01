@@ -1,5 +1,5 @@
 name: Check for Blocking Reviews
-description: checks the associated PR for any blocking reviews, will set BLOCKING output to true, will return false if none is found
+description: checks the associated PR for any blocking reviews, will set BLOCKED output to true, will return false if none is found
 
 inputs:
   GITHUB_TOKEN:
@@ -45,7 +45,7 @@ runs:
           const isBlocked = issueOrPullRequest.reviews.nodes.some(node => node.state === 'CHANGES_REQUESTED')
           if(!isBlocked) { return }
 
-          core.exportVariable('BLOCKING', isBlocked)
+          core.exportVariable('BLOCKED', isBlocked)
 
 
 
