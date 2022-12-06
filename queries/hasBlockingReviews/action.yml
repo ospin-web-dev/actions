@@ -21,7 +21,7 @@ runs:
                 issueOrPullRequest(number: $number) {
                   ... on PullRequest {
                     id
-                    reviews(first: 10) {
+                    latestOpinionatedReviews(first: 10) {
                       nodes {
                         state
                       }
@@ -42,7 +42,7 @@ runs:
             return
           }
 
-          const isBlocked = issueOrPullRequest.reviews.nodes.some(node => node.state === 'CHANGES_REQUESTED')
+          const isBlocked = issueOrPullRequest.latestOpinionatedReviews.nodes.some(node => node.state === 'CHANGES_REQUESTED')
           if(!isBlocked) { return }
 
           core.exportVariable('BLOCKED', isBlocked)

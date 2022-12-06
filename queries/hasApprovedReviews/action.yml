@@ -21,7 +21,7 @@ runs:
                 issueOrPullRequest(number: $number) {
                   ... on PullRequest {
                     id
-                    reviews(first: 10) {
+                    latestOpinionatedReviews(first: 10) {
                       nodes {
                         state
                       }
@@ -41,7 +41,7 @@ runs:
             return
           }
 
-          const isApproved = issueOrPullRequest.reviews.nodes.some(node => node.state === 'APPROVED')
+          const isApproved = issueOrPullRequest.latestOpinionatedReviews.nodes.some(node => node.state === 'APPROVED')
           if(!isApproved) { return }
           core.exportVariable('APPROVED', true)
 
