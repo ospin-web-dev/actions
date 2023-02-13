@@ -1,0 +1,66 @@
+name: move issue to sprint board
+description: moves an issue to a sprintboard
+
+inputs:
+  ASSIGNEE_NAME:
+    description: 'the username of the assignee'
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+runs:
+
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { user } = await github.graphql(`query($user: String!) {
+            user(login: $user) {
+                id
+            }
+          }`, { user: '${{inputs.ASSIGNEE_NAME}}' } )
+
+          if (!user) {
+            core.error('Could not find user')
+            return
+          }
+
+          const { repository: { issueOrPullRequest : { id, resourcePath } } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on Issue { id, resourcePath }
+                  ... on PullRequest { id, resourcePath }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            }
+          )
+
+          const resourceType = resourcePath.split('/')[3]
+
+          switch (resourceType) {
+            case 'issues':
+              await github.graphql(`mutation($assigneeIds: [ID!] = "", $id: ID = "") {
+                updateIssue(input: {id: $id, assigneeIds: $assigneeIds}) {
+                    clientMutationId
+                }
+              }`, { id, assigneeIds: [user.id] } )
+
+            break;
+
+            case 'pull':
+              await github.graphql(`mutation($assigneeIds: [ID!] = "", $pullRequestId: ID = "") {
+                updatePullRequest(input: {pullRequestId: $pullRequestId, assigneeIds: $assigneeIds}) {
+                    clientMutationId
+                }
+              }`, { pullRequestId: id, assigneeIds: [user.id] } )
+            break;
+          }
+
+

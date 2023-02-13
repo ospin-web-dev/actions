@@ -1,0 +1,113 @@
+name: Set Board Field Param
+description: Assigns the selected value to a sprint board field
+
+inputs:
+  PROJECT_NUMBER:
+    description: 'Project Number'
+  FIELD_NAME:
+    description: the name of the field to be changed
+  FIELD_VALUE:
+    description: the value of the field to be changed
+  OWNER:
+    description: the owner of the project
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const getBoardQuery = `query(
+            $owner: String!,
+            $projectNumber: Int!,
+            $repoName: String!,
+            $issueNumber: Int!,
+            ) {
+            organization(login: $owner) {
+              projectV2(number: $projectNumber) {
+                id
+                fields(first: 30) {
+                  nodes {
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      dataType
+                      options {
+                        name
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            repository(name:  $repoName, owner: $owner) {
+              issueOrPullRequest(number: $issueNumber) {
+                ... on Issue {
+                  id
+                  projectItems(first: 30) {
+                    nodes {
+                      id
+                      type
+                      project {
+                        number
+                      }
+                    }
+                  }
+                }
+                ... on PullRequest {
+                  id
+                  projectItems(first: 30) {
+                    nodes {
+                      id
+                      type
+                      project {
+                        number
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }`
+
+          const { organization, repository } = await github.graphql(getBoardQuery, {
+            owner: context.repo.owner,
+            projectNumber: parseInt('${{inputs.PROJECT_NUMBER}}'),
+            repoName: context.repo.repo,
+            issueNumber: parseInt('${{inputs.NUMBER}}')
+          })
+
+          const selectField = organization.projectV2.fields.nodes.find((node) => node.name === '${{inputs.FIELD_NAME}}' && node.dataType === 'SINGLE_SELECT')
+          const boardItem = repository.issueOrPullRequest.projectItems.nodes.find(({project}) => parseInt(${{inputs.NUMBER}}))
+          const singleSelectOption = selectField.options.find(option => option.name === '${{inputs.FIELD_VALUE}}')
+
+          if(!singleSelectOption) {
+            core.error('${{inputs.FIELD_VALUE}} is not a valid selection')
+          }
+
+          const projectId = organization.projectV2.id
+          const itemId = boardItem.id
+          const fieldId = selectField.id
+          const singleSelectOptionId = singleSelectOption.id
+
+          const assignmentMutationQuery = `mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $singleSelectOptionId: String!) {
+            updateProjectV2ItemFieldValue(
+              input: {projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: {singleSelectOptionId: $singleSelectOptionId}}
+            ) {
+            clientMutationId
+            }
+          }`
+
+          await github.graphql(assignmentMutationQuery,{
+            fieldId,
+            itemId,
+            projectId,
+            singleSelectOptionId,
+          })
+

@@ -1,0 +1,96 @@
+name: move issue to sprint board
+description: moves an issue to a sprintboard
+
+inputs:
+  LABEL:
+    description: the label to be applied
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+runs:
+
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { labels: repoLabels, issueOrPullRequest : { id, resourcePath, labels: issueLabels } } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                labels(first: 30) {
+                  nodes {
+                    id
+                    name
+                  }
+                }
+                issueOrPullRequest(number: $number) {
+                  ... on Issue {
+                    id,
+                    resourcePath,
+                    labels(first: 20) {
+                      nodes {
+                        id
+                        name
+                      }
+                    }
+                  }
+                  ... on PullRequest {
+                    id,
+                    resourcePath,
+                    labels(first: 20) {
+                      nodes {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            }
+          )
+
+          const node = repoLabels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
+
+          if(!node) {
+            core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
+            return
+          }
+
+          const {id: labelId } = node
+
+          const existingLabelIds = issueLabels.nodes.map(({id}) => id)
+
+          if(existingLabelIds.includes(labelId)) {
+            core.info('Label already applied')
+            return
+          }
+
+          const resourceType = resourcePath.split('/')[3]
+
+
+          switch (resourceType) {
+            case 'issues':
+              await github.graphql(`mutation($labelIds: [ID!] = "", $id: ID = "") {
+                updateIssue(input: {id: $id, labelIds: $labelIds}) {
+                    clientMutationId
+                }
+              }`, { id, labelIds: [...existingLabelIds, labelId] } )
+
+            break;
+
+            case 'pull':
+              await github.graphql(`mutation($labelIds: [ID!] = "", $pullRequestId: ID = "") {
+                updatePullRequest(input: {pullRequestId: $pullRequestId, labelIds: $labelIds}) {
+                    clientMutationId
+                }
+              }`, { pullRequestId: id, labelIds: [...existingLabelIds, labelId] } )
+            break;
+          }
+
+

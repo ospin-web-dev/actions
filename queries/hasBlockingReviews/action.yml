@@ -1,0 +1,59 @@
+name: Check for Blocking Reviews
+description: checks the associated PR for any blocking reviews, will set BLOCKED output to true, will return false if none is found
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+outputs:
+  BLOCKED:
+    value: boolean
+    description: the pr state
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { issueOrPullRequest } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on PullRequest {
+                    id
+                    latestOpinionatedReviews(last: 10) {
+                      nodes {
+                        state
+                      }
+                    }
+                  }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{ inputs.NUMBER }})
+
+            }
+          )
+
+          if(!issueOrPullRequest.id){
+            core.warning('No PR Found')
+            return
+          }
+
+          const isBlocked = issueOrPullRequest.latestOpinionatedReviews.nodes.some(node => node.state === 'CHANGES_REQUESTED')
+
+          core.exportVariable('BLOCKED', isBlocked)
+
+
+
+
+
+
+
+

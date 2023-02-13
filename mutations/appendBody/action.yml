@@ -1,0 +1,59 @@
+name: Append Ticket Body
+description: Appends a given text to the description of the issue/pr
+
+inputs:
+  TEXT:
+    description: 'the text to be appended'
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { issueOrPullRequest : {id, body, resourcePath } } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on Issue { id, body, resourcePath }
+                  ... on PullRequest { id, body, resourcePath }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            })
+
+
+          const resourceType = resourcePath.split('/')[3]
+
+          const newContent = body.concat(`
+          ${{inputs.TEXT}}`)
+
+
+          switch (resourceType) {
+            case 'issues':
+              await github.graphql(`mutation($body: String!, $id: ID = "") {
+                updateIssue(input: {id: $id, body: $body}) {
+                    clientMutationId
+                }
+              }`, { id, body: newContent } )
+
+            break;
+
+            case 'pull':
+              await github.graphql(`mutation($body:  String!, $pullRequestId: ID = "") {
+                updatePullRequest(input: {pullRequestId: $pullRequestId, body: $body}) {
+                    clientMutationId
+                }
+              }`, { pullRequestId: id, body: newContent } )
+            break;
+          }
+
+

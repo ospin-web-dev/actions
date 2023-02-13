@@ -1,0 +1,62 @@
+name: Get Associated Branch Name
+description: Parses the branch name and tries to find an associated issue and write it to the ISSUE_NUMBER output, will return null if none is found
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+
+outputs:
+  ISSUE_NUMBER:
+    value: integer or null
+    description: the issue number if found else null
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const branchName = '${{ github.head_ref	}}'
+          const issueSuffix = branchName.split('-')[0]
+
+          const issueNumber = parseInt(issueSuffix)
+
+          if (!Number.isInteger(issueNumber)) {
+            core.info('Could not parse issue number from branch name')
+            core.exportVariable('ISSUE_NUMBER', null);
+
+            return
+          }
+
+          const { repository: { issueOrPullRequest } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on Issue { id }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: issueNumber
+
+            }
+          )
+
+          if(!issueOrPullRequest.id) {
+            core.info('Could not find matching issue')
+            core.exportVariable('ISSUE_NUMBER', null);
+
+            return null
+
+          }
+          core.exportVariable('ISSUE_NUMBER', issueNumber);
+
+          return
+
+
+
+
+

@@ -1,0 +1,87 @@
+name: Get Single Field Value
+description: Returns the single field value of a project for a given fieldname, if not found will return null
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+  PROJECT_NUMBER:
+    description: 'Project Number'
+  FIELD_NAME:
+    description: 'The Name of the field in question'
+
+outputs:
+  VALUE:
+    value: string or null
+    description: the field value
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const {
+            repository: {
+              issueOrPullRequest: {
+                projectItems: {
+                  nodes
+                }  } } } = await github.graphql(
+            `query ($owner: String!, $repo: String!, $number: Int!, $fieldName: String!) {
+              repository(owner: $owner, name: $repo, followRenames: false) {
+                issueOrPullRequest(number: $number) {
+                  ... on Issue {
+                    projectItems(first: 10) {
+                      nodes {
+                        fieldValueByName(name: $fieldName) {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                          }
+                        }
+                        project {
+                          number
+                        }
+                      }
+                    }
+                    id
+                  }
+                  ... on PullRequest {
+                    projectItems(first: 10) {
+                      nodes {
+                        fieldValueByName(name: $fieldName) {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            id
+                            name
+                          }
+                        }
+                        project {
+                          number
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{ inputs.NUMBER }}),
+              fieldName: '${{inputs.FIELD_NAME}}'
+            }
+          )
+
+          if(nodes.length === 0){
+            core.warning('Could not find the associated project card')
+            core.exportVariable('VALUE',null)
+            return
+          }
+
+          const projectBoardNode = nodes.find(node => node.project.number ===  parseInt(${{ inputs.PROJECT_NUMBER }}))
+
+          const value = projectBoardNode.fieldValueByName.name
+
+
+          core.exportVariable('VALUE', value)

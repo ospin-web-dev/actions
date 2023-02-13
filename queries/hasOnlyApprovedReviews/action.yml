@@ -1,0 +1,61 @@
+name: Check for Approvals and Blockers
+description: checks the associated PR for any approved and blocking reviews, will set APPROVED output to true if at least 1 approved review without blocking reviews
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+outputs:
+  BLOCKED:
+    value: boolean
+    description: the pr state
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { issueOrPullRequest } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on PullRequest {
+                    id
+                    latestOpinionatedReviews(last: 10) {
+                      nodes {
+                        state
+                      }
+                    }
+                  }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{ inputs.NUMBER }})
+
+            }
+          )
+
+          if(!issueOrPullRequest.id){
+            core.warning('No PR Found')
+            return
+          }
+
+          const isBlocked = issueOrPullRequest.latestOpinionatedReviews.nodes.some(node => node.state === 'CHANGES_REQUESTED')
+          const isApproved = issueOrPullRequest.latestOpinionatedReviews.nodes.some(node => node.state === 'APPROVED')
+          const result = isApproved && !isBlocked
+
+          core.exportVariable('APPROVED', result)
+
+
+
+
+
+
+
+

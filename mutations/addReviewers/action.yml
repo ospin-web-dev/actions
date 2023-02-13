@@ -1,0 +1,55 @@
+name: move issue to sprint board
+description: moves an issue to a sprintboard
+
+inputs:
+  REVIEWER_NAMES:
+    description: 'the username of the reviewers separated by a comma'
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue/pr number
+runs:
+
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { organization: { membersWithRole } } = await github.graphql(`query($login: String!) {
+            organization(login: $login) {
+              membersWithRole(first: 30) {
+                nodes {
+                  login
+                  id
+                }
+              }
+            }
+          }`, { login: context.repo.owner } )
+
+          const { repository: { issueOrPullRequest : { id } } } = await github.graphql(
+            `query($repo: String!,$owner: String!, $number: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issueOrPullRequest(number: $number) {
+                  ... on PullRequest { id, resourcePath }
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{inputs.NUMBER}})
+            }
+          )
+          const reviewersInput = '${{inputs.REVIEWER_NAMES}}'
+          const reviewers = reviewersInput.split(',')
+
+          const matchingNodes = membersWithRole.nodes.filter(node => reviewers.includes(node.login))
+          const reviewerIds = matchingNodes.map(({id}) => id)
+
+          await github.graphql(`mutation($userIds: [ID!] = "", $pullRequestId: ID = "") {
+            requestReviews(input: {pullRequestId: $pullRequestId, userIds: $userIds}) {
+              clientMutationId
+            }
+          }`, { pullRequestId: id, userIds: reviewerIds } )
+
+
