@@ -1,0 +1,47 @@
+name: Get Close Reason
+description: Returns reason why an issue was closed, either NOT_PLANNED or MERGED
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+  NUMBER:
+    description: the issue number
+
+outputs:
+  REASON:
+    value: string or null
+    description: the close reason
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository: { issue } } = await github.graphql(
+            `query ($owner: String!, $repo: String!, $number: Int!, $fieldName: String!) {
+              repository(owner: $owner, name: $repo, followRenames: false) {
+                issue(number: 26) {
+                  id
+                  stateReason
+                  state
+                }
+              }
+            }`, {
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              number: parseInt(${{ inputs.NUMBER }}),
+            }
+          )
+
+          if(!issue || issue.state !== 'CLOSED'){
+            core.warning('Could not find the associated issue or issue is not closed')
+            core.exportVariable('REASON',null)
+            return
+          }
+
+          const projectBoardNode = nodes.find(node => node.project.number ===  parseInt(${{ inputs.PROJECT_NUMBER }}))
+
+          core.exportVariable('REASON', issue.stateReason)
