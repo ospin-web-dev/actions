@@ -62,7 +62,7 @@ runs:
             node = await github.rest.issues.createLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: inputs.LABEL
+              name: '${{inputs.LABEL}}',
             })
           }
 
