@@ -65,8 +65,8 @@ runs:
               name: '${{inputs.LABEL}}',
             })
             node = nodeJson.data
+            core.warning(node)
           }
-          core.warning(node)
           const {id: labelId } = node
 
           const existingLabelIds = issueLabels.nodes.map(({id}) => id)
