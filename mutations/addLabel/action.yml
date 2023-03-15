@@ -64,6 +64,7 @@ runs:
               repo: context.repo.repo,
               name: '${{inputs.LABEL}}',
             })
+            core.warning(node)
           }
 
           const {id: labelId } = node
