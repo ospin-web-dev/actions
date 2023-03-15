@@ -64,9 +64,12 @@ runs:
               repo: context.repo.repo,
               name: '${{inputs.LABEL}}',
             })
-            node = nodeJson.data
-            core.warning(node)
+            node = {
+              id: nodeJson.data.node_id,
+              name: '${{inputs.LABEL}}',
+            }
           }
+
           const {id: labelId } = node
 
           const existingLabelIds = issueLabels.nodes.map(({id}) => id)
