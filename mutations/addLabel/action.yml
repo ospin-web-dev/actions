@@ -59,11 +59,12 @@ runs:
 
           if(!node) {
             core.warning('Could not find label ${{inputs.LABEL}} in the target repo, creating')
-            {data: node} = await github.rest.issues.createLabel({
+            await github.rest.issues.createLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: '${{inputs.LABEL}}',
             })
+            node = repoLabels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
           }
 
           const {id: labelId } = node
