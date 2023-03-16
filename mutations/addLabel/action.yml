@@ -55,11 +55,19 @@ runs:
             }
           )
 
-          const node = repoLabels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
+          let node = repoLabels.nodes.find(({name} ) => name === '${{inputs.LABEL}}' )
 
           if(!node) {
-            core.warning('Could not find label ${{inputs.LABEL}} in the target repo')
-            return
+            core.warning('Could not find label ${{inputs.LABEL}} in the target repo, creating')
+            const nodeJson = await github.rest.issues.createLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: '${{inputs.LABEL}}',
+            })
+            node = {
+              id: nodeJson.data.node_id,
+              name: '${{inputs.LABEL}}',
+            }
           }
 
           const {id: labelId } = node
