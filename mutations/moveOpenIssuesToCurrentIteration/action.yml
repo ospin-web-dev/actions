@@ -22,7 +22,7 @@ runs:
         script: |
           async function moveIssueToIteration(issue,iterationFieldId, iterationId) {
             const { projectItems: { nodes } } = issue
-            const { id: issueId, project: { id: projectId }, fieldValueByName: { id: fieldValueId }} = nodes.find(({project: nodeProject}) => nodeProject.title === project)
+            const { id: issueId, project: { id: projectId }, fieldValueByName: { id: fieldValueId }} = nodes.find(({project: nodeProject}) => nodeProject.title === '${{inputs.PROJECT_NAME}}')
 
 
             const assignmentMutationQuery = `mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $iterationId: String!) {
