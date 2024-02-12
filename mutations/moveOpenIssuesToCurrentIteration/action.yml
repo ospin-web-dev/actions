@@ -1,0 +1,142 @@
+name: move open issues to new iteration
+description: moves all issues that are not closed from the last to the current iteration
+
+inputs:
+  PROJECT_NAME:
+    description: 'the name of the project'
+  REPOSITORY:
+    description:  the repository from which the items are moved
+  ITERATION_FIELD_NAME:
+    description: the name of the iteration column
+  OWNER:
+    description: the owner of the project
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          async function moveIssueToIteration(issue,iterationFieldId, iterationId) {
+            const { projectItems: { nodes } } = issue
+            const { id: issueId, project: { id: projectId }, fieldValueByName: { id: fieldValueId }} = nodes.find(({project: nodeProject}) => nodeProject.title === '${{inputs.PROJECT_NAME}}')
+
+
+            const assignmentMutationQuery = `mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $iterationId: String!) {
+              updateProjectV2ItemFieldValue(
+                input: {projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: {iterationId: $iterationId}}
+              ) {
+              clientMutationId
+              }
+            }`
+
+            return github.graphql(assignmentMutationQuery,{
+              fieldId: iterationFieldId,
+              itemId: issueId,
+              projectId,
+              iterationId,
+            })
+          }
+
+           const { organization } = await github.graphql(
+              `query Organization($login: String!, $project: String!, $iterationFieldName: String!) {
+                organization(login: $login) {
+                    projectsV2(query: $project, first: 1) {
+                        nodes {
+                            id
+                            number
+                            title
+                            field(name: $iterationFieldName) {
+                                ... on ProjectV2IterationField {
+                                    id
+                                    configuration {
+                                        duration
+                                        startDay
+                                        completedIterations {
+                                            duration
+                                            id
+                                            startDate
+                                            title
+                                            titleHTML
+                                        }
+                                        iterations {
+                                            duration
+                                            id
+                                            startDate
+                                            title
+                                            titleHTML
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            `,
+            {
+              "login": '${{inputs.OWNER}}',
+              "repository":'${{inputs.REPOSITORY}}',
+              "project": '${{inputs.PROJECT_NAME}}',
+              "iterationFieldName": '${{inputs.ITERATION_FIELD_NAME}}'
+              }
+          ,
+            );
+
+            const board = organization.projectsV2.nodes[0]
+            const { configuration, id: iterationFieldId } = board.field
+            const { iterations, completedIterations } = configuration
+
+            const currentIteration = iterations[0].id
+            const lastIteration = completedIterations[completedIterations.length -1].id
+
+
+            const { organization: { repository: { issues: { nodes: issues } } } } = await github.graphql(
+              `query Organization($login: String!, $repository: String!,$iterationFieldName: String!) {
+                organization(login: $login) {
+                    repository(name: $repository) {
+                        issues(states: [OPEN], first: 100) {
+                            totalCount
+                            nodes {
+                                id
+                                number
+                                projectItems(first: 100) {
+                                    nodes {
+                                        id
+                                        fieldValueByName(name: $iterationFieldName) {
+                                            ... on ProjectV2ItemFieldIterationValue {
+                                              iterationId
+                                              title
+                                              id
+                                            }
+                                        }
+                                        project {
+                                          title
+                                          id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            `,
+            {
+              "login": '${{inputs.OWNER}}',
+              "repository":'${{inputs.REPOSITORY}}',
+              "project": '${{inputs.PROJECT_NAME}}',
+              "iterationFieldName": '${{inputs.ITERATION_FIELD_NAME}}'
+              },
+            );
+
+
+            const issuesOnBoard = issues.filter(iss => iss.projectItems.nodes.length)
+            const lastIterationIssues = issuesOnBoard.filter(iss => iss.projectItems.nodes[0].fieldValueByName.iterationId === lastIteration)
+
+            for (const oldIssue of lastIterationIssues) {
+              await moveIssueToIteration(oldIssue,iterationFieldId, currentIteration)
+            }
