@@ -94,7 +94,7 @@ runs:
             const lastIteration = completedIterations[completedIterations.length -1].id
 
 
-            const { organization: { repository: { issues: { nodes: issues } } } } = await octokit.graphql(
+            const { organization: { repository: { issues: { nodes: issues } } } } = await github.graphql(
               `query Organization($login: String!, $repository: String!,$iterationFieldName: String!) {
                 organization(login: $login) {
                     repository(name: $repository) {
