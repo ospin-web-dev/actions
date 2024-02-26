@@ -91,7 +91,7 @@ runs:
             const { iterations, completedIterations } = configuration
 
             const currentIteration = iterations[0].id
-            const lastIteration = completedIterations[completedIterations.length -1].id
+            const lastIteration = completedIterations[0].id
 
 
             const { organization: { repository: { issues: { nodes: issues } } } } = await github.graphql(
