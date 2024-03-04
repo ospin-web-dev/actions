@@ -20,61 +20,98 @@ runs:
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
-          const getBoardQuery = `query($owner: String!, $projectNumber: Int!) {
-            organization(login: $owner) {
-              projectV2(number: $projectNumber) {
-                id
-                items(last: 100, orderBy: {field: POSITION, direction: ASC}) {
-                  nodes {
-                    databaseId
-                    id
-                    content {
-                      ... on Issue {
-                        id
-                        number
-                      }
-                      ... on PullRequest {
-                        id
-                        number
-                      }
-                    }
-                  }
-                }
-                fields(first: 20) {
-                  nodes {
-                    ... on ProjectV2IterationField {
-                      id
-                      name
-                      dataType
-                      configuration {
-                        iterations {
-                          id
+          const getBoardQuery = `query(
+            $issueNumber: Int!,
+            $owner: String!,
+            $iterationFieldName: String!,
+            $repoName: String!,
+            )
+          {
+            repository(
+                name: $repoName
+                owner: $owner
+            ) {
+                issueOrPullRequest(number: $issueNumber) {
+                    ... on PullRequest {
+                        projectItems(first: 10) {
+                            totalCount
+                            nodes {
+                                databaseId
+                                id
+                                type
+                                updatedAt
+                                project {
+                                    url
+                                    id
+                                    number
+                                    field(name: $iterationFieldName) {
+                                        ... on ProjectV2IterationField {
+                                            id
+                                            name
+                                            configuration {
+                                                iterations {
+                                                    id
+                                                    startDate
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                      }
                     }
-                  }
+                    ... on Issue {
+                        projectItems(first: 10) {
+                            totalCount
+                            nodes {
+                                databaseId
+                                id
+                                type
+                                updatedAt
+                                project {
+                                    url
+                                    id
+                                    number
+                                    field(name: $iterationFieldName) {
+                                        ... on ProjectV2IterationField {
+                                            id
+                                            name
+                                            configuration {
+                                                iterations {
+                                                    id
+                                                    startDate
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }`
+          }
+          `
 
-          const { organization } = await github.graphql(getBoardQuery, {
+          const { repository } = await github.graphql(getBoardQuery, {
             owner: '${{inputs.OWNER}}',
-            projectNumber: parseInt('${{inputs.PROJECT_NUMBER}}')
+            repoName: context.repo.repo,
+            issueNumber: parseInt('${{inputs.NUMBER}}'),
+            projectNumber: parseInt('${{inputs.PROJECT_NUMBER}}'),
+            iterationFieldName: '${{inputs.ITERATION_FIELD_NAME}}'
           })
 
-          const iterationFieldNode = organization.projectV2.fields.nodes.find((node) => node.name === '${{inputs.ITERATION_FIELD_NAME}}' && node.dataType === 'ITERATION')
-          const boardItem = organization.projectV2.items.nodes.find(node => node.content.number === parseInt(${{inputs.NUMBER}}))
+          const projectItem = repository.issueOrPullRequest.projectItems.nodes.find(({project}) => project.number === parseInt(${{inputs.NUMBER}}))
 
-          if(iterationFieldNode.configuration.iterations.length === 0) {
+          if (!projectItem) {
+            core.info('Issue is not part of a board')
+          }
+
+          if(projectItem.project.field.configuration.iterations === 0) {
             core.error('No current Iteration')
           }
 
-
-          const projectId = organization.projectV2.id
-          const itemId = boardItem.id
-          const fieldId = iterationFieldNode.id
-          const iterationId = iterationFieldNode.configuration.iterations[0].id
+          const iterationId = projectItem.project.field.configuration.iterations[0].id
 
           const assignmentMutationQuery = `mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $iterationId: String!) {
             updateProjectV2ItemFieldValue(
@@ -85,11 +122,8 @@ runs:
           }`
 
           await github.graphql(assignmentMutationQuery,{
-            fieldId,
-            itemId,
-            projectId,
+            fieldId: projectItem.project.field.id,
+            itemId: projectItem.id,
+            projectId: projectItem.project.id,
             iterationId,
           })
-
-
-
