@@ -135,7 +135,7 @@ runs:
 
 
             const issuesOnBoard = issues.filter(iss => iss.projectItems.nodes.length)
-            const lastIterationIssues = issuesOnBoard.filter(iss => iss.projectItems.nodes[0].fieldValueByName.iterationId === lastIteration)
+            const lastIterationIssues = issuesOnBoard.filter(iss => iss.projectItems.nodes[0].fieldValueByName && (iss.projectItems.nodes[0].fieldValueByName.iterationId === lastIteration))
 
             for (const oldIssue of lastIterationIssues) {
               await moveIssueToIteration(oldIssue,iterationFieldId, currentIteration)
