@@ -97,11 +97,10 @@ runs:
             owner: '${{inputs.OWNER}}',
             repoName: context.repo.repo,
             issueNumber: parseInt('${{inputs.NUMBER}}'),
-            projectNumber: parseInt('${{inputs.PROJECT_NUMBER}}'),
             iterationFieldName: '${{inputs.ITERATION_FIELD_NAME}}'
           })
 
-          const projectItem = repository.issueOrPullRequest.projectItems.nodes.find(({project}) => project.number === parseInt(${{inputs.NUMBER}}))
+          const projectItem = repository.issueOrPullRequest.projectItems.nodes.find(({project}) => project.number === parseInt(${{inputs.PROJECT_NUMBER}}))
 
           if (!projectItem) {
             core.info('Issue is not part of a board')
