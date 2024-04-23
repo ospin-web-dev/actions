@@ -4,6 +4,8 @@ description: Returns the id and number of the first associated PR for the given 
 inputs:
   GITHUB_TOKEN:
     description: the github token with the approriate access
+  REF:
+    description: the branch ref
 
 outputs:
   PR_ID:
@@ -37,7 +39,7 @@ runs:
               }`, {
                 repo: context.repo.repo,
                 owner: context.repo.owner,
-                ref: github.ref,
+                ref: '${{ inputs.REF }}',
               }
             )
 
