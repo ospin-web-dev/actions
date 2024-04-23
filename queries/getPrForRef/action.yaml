@@ -1,0 +1,61 @@
+name: Get PR for ref
+description: Returns the id and number of the first associated PR for the given ref or null if no PR is found
+
+inputs:
+  GITHUB_TOKEN:
+    description: the github token with the approriate access
+
+outputs:
+  PR_ID:
+    value: string or null
+    description: the database id
+  PR_NUMBER:
+    value: int or null
+    description: the pr number
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const { repository } = await github.graphql(
+              `query ($owner: String!, $repo: String!, $ref: String!) {
+                repository(owner:  $owner, name: $repo) {
+                  ref(qualifiedName: $ref) {
+                      associatedPullRequests(first: 10) {
+                          totalCount
+                          nodes {
+                              id
+                              number
+                          }
+                      }
+                  }
+              }
+              }`, {
+                repo: context.repo.repo,
+                owner: context.repo.owner,
+                ref: github.ref,
+              }
+            )
+
+          const { ref: { associatedPullRequests } } = repository
+
+          if (associatedPullRequests.length === 0) {
+              core.info('No Pull Request found for ref')
+              core.exportVariable('PR_NUMBER', null);
+              core.exportVariable('PR_ID', null)
+              return
+          }
+
+          if (associatedPullRequests.length > 1) {
+              core.info('Multiple Pull Requests available for ref,defaulting to first')
+          }
+
+          const { id, number } = associatedPullRequests.nodes[0]
+
+          core.info(`PR Number: ${number}`)
+          core.exportVariable('PR_NUMBER', number);
+          core.exportVariable('PR_ID', id);
