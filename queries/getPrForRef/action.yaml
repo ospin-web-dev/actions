@@ -45,8 +45,7 @@ runs:
 
 
           const { ref, ref: { associatedPullRequests } } = repository
-          core.info(ref)
-          console.log(ref)
+
           if(!ref) {
               core.info('No Pull Request found for ref')
               core.exportVariable('PR_NUMBER', null);
@@ -54,7 +53,7 @@ runs:
               return
           }
 
-          if (associatedPullRequests.length === 0) {
+          if (associatedPullRequests.totalCount === 0) {
               core.info('No Pull Request found for ref')
               core.exportVariable('PR_NUMBER', null);
               core.exportVariable('PR_ID', null)
