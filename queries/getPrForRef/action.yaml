@@ -43,14 +43,16 @@ runs:
               }
             )
 
+
+          const { ref, ref: { associatedPullRequests } } = repository
+
+
           if(!ref) {
               core.info('No Pull Request found for ref')
               core.exportVariable('PR_NUMBER', null);
               core.exportVariable('PR_ID', null)
               return
           }
-
-          const { ref: { associatedPullRequests } } = repository
 
           if (associatedPullRequests.length === 0) {
               core.info('No Pull Request found for ref')
